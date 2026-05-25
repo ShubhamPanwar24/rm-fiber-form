@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RM Fiber Cable Form - Direct Excel Save</title>
+<style>
+:root {
+  --primary:#0f62fe; --primary-dark:#0043ce; --success:#198754; --danger:#dc3545;
+  --bg:#f5f7fb; --card:#ffffff; --text:#1f2937; --muted:#667085; --border:#d0d7e2;
+}
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body { margin:0; font-family:Arial, Helvetica, sans-serif; background:var(--bg); color:var(--text); }
+.wrapper { width:min(980px, 100%); margin:0 auto; padding:16px; }
+.card { background:var(--card); border-radius:18px; box-shadow:0 8px 26px rgba(16,24,40,.08); padding:22px; }
+.header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; }
+h1 { font-size:clamp(22px, 4vw, 30px); margin:0 0 6px; }
+.subtitle { color:var(--muted); line-height:1.45; margin:0; font-size:15px; }
+.status { border-radius:999px; padding:8px 12px; font-size:13px; font-weight:700; white-space:nowrap; background:#fff4e5; color:#9a5b00; }
+.status.ok { background:#e8f7ee; color:#106b38; }
+.status.err { background:#fde8e8; color:#a61b1b; }
+.grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px; }
+.field { display:flex; flex-direction:column; gap:7px; }
+label { font-weight:700; font-size:14px; }
+.req { color:var(--danger); }
+input, select { width:100%; min-height:48px; padding:12px 13px; border:1px solid var(--border); border-radius:10px; font-size:16px; background:#fff; color:var(--text); }
+input:focus, select:focus { border-color:var(--primary); outline:3px solid rgba(15,98,254,.16); }
+.help { color:var(--muted); font-size:12px; margin-top:2px; }
+.actions { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:10px; margin-top:18px; }
+button { min-height:48px; border:0; border-radius:10px; padding:12px 16px; font-size:15px; font-weight:800; cursor:pointer; }
+button:disabled { opacity:.6; cursor:not-allowed; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-light { background:#eef2f7; color:#1f2937; }
+.alert { display:none; margin-top:14px; padding:12px 14px; border-radius:10px; font-weight:700; font-size:14px; }
+.alert.show { display:block; }
+.alert.success { background:#e8f7ee; color:#106b38; }
+.alert.error { background:#fde8e8; color:#a61b1b; }
+.alert.info { background:#eaf2ff; color:#174ea6; }
+.preview-wrap { overflow-x:auto; margin-top:20px; border:1px solid var(--border); border-radius:12px; }
+table { width:100%; border-collapse:collapse; min-width:760px; font-size:14px; }
+th, td { padding:10px; border-bottom:1px solid var(--border); text-align:left; }
+th { background:#f1f4f9; position:sticky; top:0; }
+.footer-note { margin-top:12px; color:var(--muted); font-size:13px; line-height:1.4; }
+@media (max-width:720px) {
+  .wrapper { padding:10px; } .card { padding:16px; border-radius:14px; }
+  .header { flex-direction:column; } .grid { grid-template-columns:1fr; gap:13px; }
+  .actions { grid-template-columns:1fr; position:sticky; bottom:0; background:var(--card); padding-top:10px; }
+  input, select, button { font-size:16px; min-height:52px; }
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1>RM Fiber Cable Data Form</h1>
+        <p class="subtitle">Mobile-friendly form with direct save to central Excel through Power Automate. Select RM, choose available Pin/Town Code combination, fill Landmark and City, then submit.</p>
+      </div>
+      <div id="saveStatus" class="status">Power Automate URL pending</div>
+    </div>
+
+    <form id="dataForm">
+      <div class="grid">
+        <div class="field">
+          <label for="rm">RM <span class="req">*</span></label>
+          <select id="rm" required><option value="">Select RM</option></select>
+        </div>
+        <div class="field">
+          <label for="combo">Available Selection <span class="req">*</span></label>
+          <select id="combo" required disabled><option value="">Select RM first</option></select>
+          <span class="help">Filtered by RM: Pin Code | Town Class | Town Code</span>
+        </div>
+        <div class="field">
+          <label for="landmark">Landmark <span class="req">*</span></label>
+          <input id="landmark" required autocomplete="off" placeholder="Enter landmark" />
+        </div>
+        <div class="field">
+          <label for="pinCode">Pin Code <span class="req">*</span></label>
+          <input id="pinCode" required inputmode="numeric" placeholder="Auto-filled / editable" />
+        </div>
+        <div class="field">
+          <label for="townClass">Town Class <span class="req">*</span></label>
+          <input id="townClass" required placeholder="Auto-filled / editable" />
+        </div>
+        <div class="field">
+          <label for="townCode">Town Code <span class="req">*</span></label>
+          <input id="townCode" required placeholder="Auto-filled / editable" />
+        </div>
+        <div class="field">
+          <label for="city">City <span class="req">*</span></label>
+          <input id="city" required autocomplete="off" placeholder="Enter city" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="submitBtn" type="submit">Submit & Save to Excel</button>
+        <button class="btn-success" type="button" id="downloadBtn">Download Backup Excel</button>
+        <button class="btn-light" type="button" id="clearBtn">Clear Local Backup</button>
+      </div>
+      <div id="message" class="alert"></div>
+      <p class="footer-note">If internet or Power Automate fails, the entry remains in local backup and can be downloaded as Excel-compatible file.</p>
+    </form>
+
+    <div class="preview-wrap">
+      <table id="previewTable">
+        <thead><tr><th>Sr. No</th><th>RM</th><th>Landmark</th><th>Pin Code</th><th>Town Class</th><th>Town Code</th><th>City</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======================================================
+   STEP 1: Paste your Power Automate HTTP POST URL below.
+   Example: const POWER_AUTOMATE_URL = "https://prod-xx.logic.azure.com/...";
+   ====================================================== */
+const POWER_AUTOMATE_URL = "https://default44f84597e41f4b9e84f012e6d5b975.d8.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/b881a59dd71949dea5a7ae969383ed9a/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=EilN33DqeNNy_dpAKZ2hG2ftDO3fVzNjQjNoh3AM_Kg";
+
+/* Optional simple shared key. Keep same value in HTML and Flow condition if you use it. */
+const FORM_SECRET = "RM_FORM_2026";
+
+const RM_DATA = {"Badri Lal Dhakar": [{"townCode": "RAJCHIUC2L01632", "pinCode": "312001", "townClass": "1-10L"}, {"townCode": "RAJCHIRC5L3861", "pinCode": "312022", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L2711", "pinCode": "312022", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L4113", "pinCode": "312022", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L5590", "pinCode": "312022", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L6261", "pinCode": "312022", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L7184", "pinCode": "312022", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L4576", "pinCode": "312023", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L8135", "pinCode": "312023", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L9140", "pinCode": "312024", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L0129", "pinCode": "312204", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L9615", "pinCode": "312204", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L0571", "pinCode": "312205", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L0646", "pinCode": "312205", "townClass": "Rural"}, {"townCode": "RAJCHIRC6L4813", "pinCode": "312205", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L9164", "pinCode": "312207", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L0074", "pinCode": "312402", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L0704", "pinCode": "312402", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L9819", "pinCode": "312602", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L8873", "pinCode": "312613", "townClass": "Rural"}, {"townCode": "RAJCHIUC3L9208", "pinCode": "312613", "townClass": "Below 1L"}, {"townCode": "RAJPRARC6L0402", "pinCode": "312615", "townClass": "Rural"}, {"townCode": "RAJPRARC6L9060", "pinCode": "312615", "townClass": "Rural"}, {"townCode": "RAJCHIRC5L0036", "pinCode": "312620", "townClass": "Rural"}, {"townCode": "RAJCHIUC3L9208", "pinCode": "312622", "townClass": "Below 1L"}, {"townCode": "RAJCHIUC3L6653", "pinCode": "323307", "townClass": "Below 1L"}, {"townCode": "RAJJHAUC3L9221", "pinCode": "326033", "townClass": "Below 1L"}, {"townCode": "RAJJHARC5L6221", "pinCode": "326036", "townClass": "Rural"}, {"townCode": "RAJJHARC5L0051", "pinCode": "326501", "townClass": "Rural"}, {"townCode": "RAJJHARC5L4386", "pinCode": "326502", "townClass": "Rural"}, {"townCode": "RAJJHARC5L5377", "pinCode": "326502", "townClass": "Rural"}, {"townCode": "RAJJHARC5L8148", "pinCode": "326502", "townClass": "Rural"}, {"townCode": "RAJJHARC5L0002", "pinCode": "326512", "townClass": "Rural"}, {"townCode": "RAJJHARC5L0061", "pinCode": "326512", "townClass": "Rural"}, {"townCode": "RAJJHARC5L01460", "pinCode": "326512", "townClass": "Rural"}, {"townCode": "RAJJHARC5L8148", "pinCode": "326512", "townClass": "Rural"}, {"townCode": "RAJJHARC6L9118", "pinCode": "326515", "townClass": "Rural"}], "Beerendra Singh": [{"townCode": "RAJBHARC6L6009", "pinCode": "321001", "townClass": "Rural"}, {"townCode": "RAJBHAUC1L0561", "pinCode": "321001", "townClass": "1-10L"}, {"townCode": "RAJBHARC6L1408", "pinCode": "321026", "townClass": "Rural"}, {"townCode": "RAJBHAUC3L9225", "pinCode": "321205", "townClass": "Below 1L"}, {"townCode": "RAJBHAUC1L0561", "pinCode": "321303", "townClass": "1-10L"}, {"townCode": "RAJBHAUC3L4812", "pinCode": "321408", "townClass": "Below 1L"}, {"townCode": "RAJDAURC6L0151", "pinCode": "321608", "townClass": "Rural"}, {"townCode": "RAJDAURC6L2271", "pinCode": "321608", "townClass": "Rural"}, {"townCode": "RAJDAURC6L0009", "pinCode": "321613", "townClass": "Rural"}, {"townCode": "RAJKARUC3L01289", "pinCode": "322241", "townClass": "Below 1L"}, {"townCode": "RAJKARRC6L3313", "pinCode": "322249", "townClass": "Rural"}, {"townCode": "RAJKARUC3L01289", "pinCode": "322255", "townClass": "Below 1L"}, {"townCode": "RAJDHARC6L5583", "pinCode": "328001", "townClass": "Rural"}, {"townCode": "RAJDHAUC2L01021", "pinCode": "328001", "townClass": "1-10L"}, {"townCode": "RAJDHARC6L3500", "pinCode": "328022", "townClass": "Rural"}, {"townCode": "RAJDHARC6L0565", "pinCode": "328024", "townClass": "Rural"}, {"townCode": "RAJDHARC6L4971", "pinCode": "328024", "townClass": "Rural"}, {"townCode": "RAJDHARC6L01118", "pinCode": "328029", "townClass": "Rural"}, {"townCode": "RAJDHARC6L3962", "pinCode": "328029", "townClass": "Rural"}, {"townCode": "RAJDHAUC2L01021", "pinCode": "328030", "townClass": "1-10L"}, {"townCode": "RAJDHARC6L01118", "pinCode": "328041", "townClass": "Rural"}], "Chandra Bhan Jatav": [{"townCode": "RAJALWUC1L0560", "pinCode": "301001", "townClass": "1-10L"}, {"townCode": "RAJALWRC6L12664", "pinCode": "301018", "townClass": "Rural"}, {"townCode": "RAJALWUC2L0557", "pinCode": "301019", "townClass": "1-10L"}, {"townCode": "RAJALWRC6L12664", "pinCode": "301404", "townClass": "Rural"}, {"townCode": "RAJALWRC6L7688", "pinCode": "301408", "townClass": "Rural"}, {"townCode": "RAJALWRC6L9296", "pinCode": "301408", "townClass": "Rural"}, {"townCode": "RAJALWRC6L6139", "pinCode": "301411", "townClass": "Rural"}, {"townCode": "RAJALWRC6L7696", "pinCode": "301701", "townClass": "Rural"}, {"townCode": "RAJALWRC6L12664", "pinCode": "301707", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L0034", "pinCode": "303105", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9071", "pinCode": "303105", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L6696", "pinCode": "303106", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L1743", "pinCode": "303110", "townClass": "Rural"}], "Chetan Kumar Mohtha": [{"townCode": "RAJBHIUC1L01348", "pinCode": "311001", "townClass": "1-10L"}, {"townCode": "RAJBHIRC6L2433", "pinCode": "311011", "townClass": "Rural"}, {"townCode": "RAJBHIRC4L9198", "pinCode": "311024", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L7961", "pinCode": "311025", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L01531", "pinCode": "311026", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L9196", "pinCode": "311201", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L0148", "pinCode": "311203", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L3239", "pinCode": "311203", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L0860", "pinCode": "311301", "townClass": "Rural"}, {"townCode": "RAJBHIRC4L9197", "pinCode": "311403", "townClass": "Rural"}, {"townCode": "RAJBHIUC3L9217", "pinCode": "311604", "townClass": "Below 1L"}, {"townCode": "RAJBHIRC6L1773", "pinCode": "311801", "townClass": "Rural"}, {"townCode": "RAJBHIRC6L9043", "pinCode": "311805", "townClass": "Rural"}, {"townCode": "RAJBUNRC6L0734", "pinCode": "323001", "townClass": "Rural"}, {"townCode": "RAJBUNUC2L01195", "pinCode": "323001", "townClass": "1-10L"}, {"townCode": "RAJBunRC6L0734", "pinCode": "323001", "townClass": "Rural"}, {"townCode": "RAJBUNRC6L0734", "pinCode": "323021", "townClass": "Rural"}, {"townCode": "RAJBUNRC6L0243", "pinCode": "323803", "townClass": "Rural"}, {"townCode": "RAJBUNRC6L2206", "pinCode": "323803", "townClass": "Rural"}, {"townCode": "RAJBUNRC6L7224", "pinCode": "323803", "townClass": "Rural"}], "Dharamveer": [{"townCode": "RAJCHURC6L9087", "pinCode": "331001", "townClass": "Rural"}, {"townCode": "RAJCHURC6L3390", "pinCode": "331021", "townClass": "Rural"}, {"townCode": "RAJCHUUC3L02216", "pinCode": "331022", "townClass": "Below 1L"}, {"townCode": "RAJJHURC6L3875", "pinCode": "331026", "townClass": "Rural"}, {"townCode": "RAJJHURC6L3595", "pinCode": "331027", "townClass": "Rural"}, {"townCode": "RAJJHURC6L6722", "pinCode": "331027", "townClass": "Rural"}, {"townCode": "RAJJHUUC3L9228", "pinCode": "331027", "townClass": "Below 1L"}, {"townCode": "RAJCHUUC2L02214", "pinCode": "331507", "townClass": "1-10L"}, {"townCode": "RAJJHURC6L3060", "pinCode": "333001", "townClass": "Rural"}, {"townCode": "RAJJHURC4L0580", "pinCode": "333025", "townClass": "Rural"}, {"townCode": "RAJJHURC4L1057", "pinCode": "333035", "townClass": "Rural"}, {"townCode": "RAJJHURC4L02646", "pinCode": "333042", "townClass": "Rural"}, {"townCode": "RAJJHURC5L5364", "pinCode": "333042", "townClass": "Rural"}, {"townCode": "RAJJHURC5L8012", "pinCode": "333042", "townClass": "Rural"}, {"townCode": "RAJJHURC6L3060", "pinCode": "333301", "townClass": "Rural"}, {"townCode": "RAJJHURC4L8008", "pinCode": "333303", "townClass": "Rural"}, {"townCode": "RAJJHURC4L3956", "pinCode": "333304", "townClass": "Rural"}, {"townCode": "RAJJHURC5L0584", "pinCode": "333304", "townClass": "Rural"}, {"townCode": "RAJJHURC6L9299", "pinCode": "333701", "townClass": "Rural"}, {"townCode": "RAJJHURC4L9434", "pinCode": "333702", "townClass": "Rural"}, {"townCode": "RAJJHURC6L3756", "pinCode": "333704", "townClass": "Rural"}, {"townCode": "RAJJHURC6L7212", "pinCode": "333704", "townClass": "Rural"}, {"townCode": "RAJJHURC5L2234", "pinCode": "333707", "townClass": "Rural"}], "Dharmpal Singh": [{"townCode": "RAJJODRC4L5242", "pinCode": "202305", "townClass": "Rural"}, {"townCode": "RAJPALRC5L0583", "pinCode": "306302", "townClass": "Rural"}, {"townCode": "RAJPALRC5L5380", "pinCode": "306302", "townClass": "Rural"}, {"townCode": "RajPalRC5L8102", "pinCode": "306302", "townClass": "Rural"}, {"townCode": "JODHPUR555", "pinCode": "322001", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342001", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342003", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342004", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342005", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342006", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342007", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342008", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342011", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342014", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342015", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342024", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342026", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342304", "townClass": "10-75L"}, {"townCode": "RAJJODRC4L5242", "pinCode": "342305", "townClass": "Rural"}, {"townCode": "RAJJODRC6L7235", "pinCode": "342602", "townClass": "Rural"}, {"townCode": "RAJJODUC3L0547", "pinCode": "342602", "townClass": "Below 1L"}, {"townCode": "RAJJAIUC3L6863", "pinCode": "345001", "townClass": "Below 1L"}], "Diwakar kumar salun": [{"townCode": "RAJCHUUC3L01893", "pinCode": "331403", "townClass": "Below 1L"}, {"townCode": "RAJCHUUC3L01893", "pinCode": "331406", "townClass": "Below 1L"}, {"townCode": "RAJBIKRC4L02521", "pinCode": "331801", "townClass": "Rural"}, {"townCode": "BIKANER564", "pinCode": "334001", "townClass": "1-10L"}, {"townCode": "BIKANER564", "pinCode": "334002", "townClass": "1-10L"}, {"townCode": "BIKANER564", "pinCode": "334003", "townClass": "1-10L"}, {"townCode": "BIKANER564", "pinCode": "334004", "townClass": "1-10L"}, {"townCode": "BIKANER564", "pinCode": "334022", "townClass": "1-10L"}, {"townCode": "RAJBIKRC4L8086", "pinCode": "334201", "townClass": "Rural"}, {"townCode": "RAJBIKRC4L3687", "pinCode": "334302", "townClass": "Rural"}, {"townCode": "RAJBIKRC4L0579", "pinCode": "334305", "townClass": "Rural"}, {"townCode": "BIKANER564", "pinCode": "334401", "townClass": "1-10L"}, {"townCode": "BIKANER564", "pinCode": "334403", "townClass": "1-10L"}, {"townCode": "RAJBIKRC4L8121", "pinCode": "334602", "townClass": "Rural"}, {"townCode": "RAJBIKRC4L9203", "pinCode": "334603", "townClass": "Rural"}, {"townCode": "RAJBIKRC6L4968", "pinCode": "334603", "townClass": "Rural"}], "Gunesh Ram Banjara": [{"townCode": "RAJPALRC6L6017", "pinCode": "306001", "townClass": "Rural"}, {"townCode": "RAJPALUC3L02105", "pinCode": "306001", "townClass": "Below 1L"}, {"townCode": "RAJPALRC6L9042", "pinCode": "306023", "townClass": "Rural"}, {"townCode": "RAJPALRC6L0511", "pinCode": "306104", "townClass": "Rural"}, {"townCode": "RAJPALRC6L4563", "pinCode": "306104", "townClass": "Rural"}, {"townCode": "RAJPALRC6L9042", "pinCode": "306104", "townClass": "Rural"}, {"townCode": "RAJPALRC5L4708", "pinCode": "306115", "townClass": "Rural"}, {"townCode": "RAJPALUC1L01979", "pinCode": "306401", "townClass": "1-10L"}, {"townCode": "RAJPALRC6L8078", "pinCode": "306501", "townClass": "Rural"}, {"townCode": "RAJPALRC6L9042", "pinCode": "306502", "townClass": "Rural"}, {"townCode": "RAJPALRC6L9067", "pinCode": "306502", "townClass": "Rural"}, {"townCode": "RAJPALRC5L7476", "pinCode": "306601", "townClass": "Rural"}, {"townCode": "RAJPALUC3L0545", "pinCode": "306701", "townClass": "Below 1L"}, {"townCode": "RAJPALRC5L9433", "pinCode": "306708", "townClass": "Rural"}, {"townCode": "RAJPALRC5L5886", "pinCode": "306901", "townClass": "Rural"}, {"townCode": "RAJPALRC5L8034", "pinCode": "306901", "townClass": "Rural"}, {"townCode": "RAJPALRC5L9128", "pinCode": "306901", "townClass": "Rural"}, {"townCode": "RAJPALRC6L9046", "pinCode": "306901", "townClass": "Rural"}, {"townCode": "RAJPALRC5L0747", "pinCode": "306902", "townClass": "Rural"}, {"townCode": "RAJPALRC5L4902", "pinCode": "306902", "townClass": "Rural"}, {"townCode": "RAJPALRC6L4973", "pinCode": "306902", "townClass": "Rural"}, {"townCode": "RAJPALRC6L5682", "pinCode": "306902", "townClass": "Rural"}, {"townCode": "RAJPALRC6L8703", "pinCode": "306902", "townClass": "Rural"}, {"townCode": "RAJSIRUC3L0553", "pinCode": "307001", "townClass": "Below 1L"}, {"townCode": "RAJSIRRC6L6482", "pinCode": "307026", "townClass": "Rural"}, {"townCode": "RAJSIRUC3L02238", "pinCode": "307026", "townClass": "Below 1L"}, {"townCode": "RAJJALRC6L4590", "pinCode": "343039", "townClass": "Rural"}, {"townCode": "RAJJALRC6L6824", "pinCode": "343039", "townClass": "Rural"}], "Jitendra Kumar Choubisa": [{"townCode": "RAJUDAUC1L0562", "pinCode": "313001", "townClass": "1-10L"}, {"townCode": "RAJUDAUC1L0562", "pinCode": "313002", "townClass": "1-10L"}, {"townCode": "RAJUDARC6L8155", "pinCode": "313026", "townClass": "Rural"}, {"townCode": "RAJUDARC6L7391", "pinCode": "313027", "townClass": "Rural"}, {"townCode": "RAJUDARC6L0568", "pinCode": "313038", "townClass": "Rural"}, {"townCode": "RAJUDARC6L0728", "pinCode": "313038", "townClass": "Rural"}, {"townCode": "RAJUDARC6L9038", "pinCode": "313322", "townClass": "Rural"}, {"townCode": "RAJRAJUC3L02677", "pinCode": "313324", "townClass": "Below 1L"}, {"townCode": "RAJRAJUC3L02677", "pinCode": "313333", "townClass": "Below 1L"}, {"townCode": "RAJDUNRC5L4594", "pinCode": "314021", "townClass": "Rural"}, {"townCode": "RAJDUNRC6L0604", "pinCode": "314022", "townClass": "Rural"}, {"townCode": "RAJDUNUC3L9219", "pinCode": "314024", "townClass": "Below 1L"}, {"townCode": "RAJDUNRC6L8739", "pinCode": "314406", "townClass": "Rural"}, {"townCode": "RAJBANRC6L1498", "pinCode": "327602", "townClass": "Rural"}, {"townCode": "RAJBANRC6L9271", "pinCode": "327602", "townClass": "Rural"}, {"townCode": "RAJBANRC4L8236", "pinCode": "327603", "townClass": "Rural"}, {"townCode": "RAJBANRC6L5167", "pinCode": "327604", "townClass": "Rural"}], "Kapil  Laxkar": [{"townCode": "JAIPUR554", "pinCode": "302001", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302002", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302003", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302004", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302005", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302006", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302015", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302016", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302017", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302026", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302031", "townClass": "10-75L"}, {"townCode": "RAJJAIRC5L02443", "pinCode": "303120", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9162", "pinCode": "303301", "townClass": "Rural"}], "Mahesh Kumar Verma": [{"townCode": "RAJTONUC2L0996", "pinCode": "304001", "townClass": "1-10L"}, {"townCode": "RAJTONUC3L0550", "pinCode": "304021", "townClass": "Below 1L"}, {"townCode": "RAJSAWRC6L0417", "pinCode": "322001", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L3938", "pinCode": "322001", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L6862", "pinCode": "322001", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L7632", "pinCode": "322001", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L9072", "pinCode": "322001", "townClass": "Rural"}, {"townCode": "RAJSAWUC2L01349", "pinCode": "322021", "townClass": "1-10L"}, {"townCode": "RAJSAWRC6L01892", "pinCode": "322023", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L0472", "pinCode": "322025", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L0780", "pinCode": "322025", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L5071", "pinCode": "322025", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L9086", "pinCode": "322025", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L9109", "pinCode": "322025", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L9111", "pinCode": "322025", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L0010", "pinCode": "322027", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L6771", "pinCode": "322029", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L5668", "pinCode": "322030", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L01615", "pinCode": "322702", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L4974", "pinCode": "322702", "townClass": "Rural"}, {"townCode": "RAJSAWRC6L8035", "pinCode": "322704", "townClass": "Rural"}], "Manish Solanki": [{"townCode": "AJMER563", "pinCode": "305001", "townClass": "1-10L"}, {"townCode": "AJMER563", "pinCode": "305002", "townClass": "1-10L"}, {"townCode": "AJMER563", "pinCode": "305003", "townClass": "1-10L"}, {"townCode": "AJMER563", "pinCode": "305004", "townClass": "1-10L"}, {"townCode": "AJMER563", "pinCode": "305005", "townClass": "1-10L"}, {"townCode": "AJMER563", "pinCode": "305007", "townClass": "1-10L"}, {"townCode": "RAJAJMRC5L8755", "pinCode": "305023", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L02232", "pinCode": "305404", "townClass": "Rural"}, {"townCode": "RAJAJMUC3L01619", "pinCode": "305601", "townClass": "Below 1L"}, {"townCode": "RAJAJMRC6L01992", "pinCode": "305622", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L8125", "pinCode": "305623", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L9355", "pinCode": "305623", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L8125", "pinCode": "305624", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L02131", "pinCode": "305627", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L01992", "pinCode": "305628", "townClass": "Rural"}, {"townCode": "RAJAJMRC5L01844", "pinCode": "305812", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L4520", "pinCode": "305901", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L4536", "pinCode": "305901", "townClass": "Rural"}, {"townCode": "RAJAJMUC2L02269", "pinCode": "305901", "townClass": "1-10L"}, {"townCode": "RAJAJMRC6L6353", "pinCode": "305925", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L7704", "pinCode": "305925", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L02601", "pinCode": "305926", "townClass": "Rural"}, {"townCode": "RAJAJMRC6L5391", "pinCode": "305926", "townClass": "Rural"}, {"townCode": "RAJPALRC5L02260", "pinCode": "306105", "townClass": "Rural"}], "Nand Lal Jat": [{"townCode": "JAIPUR554", "pinCode": "302012", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302016", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "303380", "townClass": "10-75L"}, {"townCode": "RAJJAIRC5L8040", "pinCode": "303601", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L02478", "pinCode": "303602", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L8050", "pinCode": "303602", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L02478", "pinCode": "303603", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L02479", "pinCode": "303603", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L5357", "pinCode": "303603", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L5373", "pinCode": "303603", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L8058", "pinCode": "303603", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9541", "pinCode": "303603", "townClass": "Rural"}, {"townCode": "RAJJAIUC3L01330", "pinCode": "303603", "townClass": "Below 1L"}, {"townCode": "RAJJAIRC6L0566", "pinCode": "303701", "townClass": "Rural"}, {"townCode": "RAJJAIRC4L8043", "pinCode": "303702", "townClass": "Rural"}, {"townCode": "JAIPUR554", "pinCode": "303706", "townClass": "10-75L"}, {"townCode": "RAJJAIRC5L6911", "pinCode": "303706", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9146", "pinCode": "303712", "townClass": "Rural"}, {"townCode": "JAIPUR554", "pinCode": "303801", "townClass": "10-75L"}, {"townCode": "RAJJAIRC4L1016", "pinCode": "303801", "townClass": "Rural"}, {"townCode": "RAJJAIRC6L8062", "pinCode": "303801", "townClass": "Rural"}, {"townCode": "RAJJAIRC6L9635", "pinCode": "303801", "townClass": "Rural"}, {"townCode": "RAJJAIRC4L3309", "pinCode": "303803", "townClass": "Rural"}, {"townCode": "RAJJAIRC4L5386", "pinCode": "303804", "townClass": "Rural"}, {"townCode": "RAJJAIRC4L0578", "pinCode": "303805", "townClass": "Rural"}, {"townCode": "RAJJAIRC4L2076", "pinCode": "303806", "townClass": "Rural"}], "Prem Chand Verma": [{"townCode": "RAJCHIRC5L5308", "pinCode": "323304", "townClass": "Rural"}, {"townCode": "KOTA556", "pinCode": "324001", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324002", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324003", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324004", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324005", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324006", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324007", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324008", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324009", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "324010", "townClass": "10-75L"}, {"townCode": "KOTA556", "pinCode": "325001", "townClass": "10-75L"}, {"townCode": "RAJKOTUC3L7539", "pinCode": "325001", "townClass": "Below 1L"}, {"townCode": "RAJBARUC2L01117", "pinCode": "325205", "townClass": "1-10L"}, {"townCode": "RAJBARRC6L0128", "pinCode": "325209", "townClass": "Rural"}, {"townCode": "RAJBARRC4L8200", "pinCode": "325216", "townClass": "Rural"}, {"townCode": "RAJBARUC3L5052", "pinCode": "325218", "townClass": "Below 1L"}, {"townCode": "RAJBARUC3L9218", "pinCode": "325220", "townClass": "Below 1L"}, {"townCode": "RAJBARRC6L0005", "pinCode": "325221", "townClass": "Rural"}, {"townCode": "RAJBARRC6L4486", "pinCode": "325221", "townClass": "Rural"}, {"townCode": "RAJBARRC6L9036", "pinCode": "325221", "townClass": "Rural"}, {"townCode": "RAJKOTRC6L9041", "pinCode": "326518", "townClass": "Rural"}, {"townCode": "RAJKOTRC6L3718", "pinCode": "326529", "townClass": "Rural"}], "Rajendra Kumar": [{"townCode": "RAJGANRC6L02291", "pinCode": "335001", "townClass": "Rural"}, {"townCode": "RAJGANRC6L2986", "pinCode": "335001", "townClass": "Rural"}, {"townCode": "RAJGANRC6L3281", "pinCode": "335001", "townClass": "Rural"}, {"townCode": "RAJGANRC6L9047", "pinCode": "335001", "townClass": "Rural"}, {"townCode": "RAJGANUC1L02367", "pinCode": "335001", "townClass": "1-10L"}, {"townCode": "RAJGANRC6L9759", "pinCode": "335002", "townClass": "Rural"}, {"townCode": "RAJGANRC6L7761", "pinCode": "335022", "townClass": "Rural"}, {"townCode": "RAJGANRC6L4565", "pinCode": "335025", "townClass": "Rural"}, {"townCode": "RAJGANRC6L7540", "pinCode": "335025", "townClass": "Rural"}, {"townCode": "RAJGANUC3L01668", "pinCode": "335051", "townClass": "Below 1L"}, {"townCode": "RAJGANRC5L8055", "pinCode": "335062", "townClass": "Rural"}, {"townCode": "RAJGANRC6L9881", "pinCode": "335073", "townClass": "Rural"}, {"townCode": "RAJHANUC2L01698", "pinCode": "335513", "townClass": "1-10L"}, {"townCode": "RAJHANRC5L0132", "pinCode": "335524", "townClass": "Rural"}, {"townCode": "RAJHANRC5L6980", "pinCode": "335524", "townClass": "Rural"}, {"townCode": "RAJHANRC5L9177", "pinCode": "335524", "townClass": "Rural"}, {"townCode": "RAJGANRC6L5497", "pinCode": "335704", "townClass": "Rural"}, {"townCode": "RAJGANRC6L5443", "pinCode": "335707", "townClass": "Rural"}, {"townCode": "RAJGANUC3L9237", "pinCode": "335804", "townClass": "Below 1L"}], "Rakesh  Yogi": [{"townCode": "JAIPUR554", "pinCode": "302006", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302016", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302018", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302019", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302020", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302021", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302022", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302026", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302029", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302033", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302034", "townClass": "10-75L"}, {"townCode": "JAIPUR554", "pinCode": "302039", "townClass": "10-75L"}, {"townCode": "RAJJAIRC5L2823", "pinCode": "303007", "townClass": "Rural"}, {"townCode": "RAJJAIUC3L9782", "pinCode": "303901", "townClass": "Below 1L"}], "Ramesh chand": [{"townCode": "RAJJAIRC5L6781", "pinCode": "303008", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9159", "pinCode": "303008", "townClass": "Rural"}, {"townCode": "JAIPUR554", "pinCode": "303328", "townClass": "10-75L"}, {"townCode": "RAJJAIRC5L5266", "pinCode": "303328", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L6969", "pinCode": "303328", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L7684", "pinCode": "303328", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L8894", "pinCode": "303328", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9459", "pinCode": "303328", "townClass": "Rural"}, {"townCode": "JAIPUR554", "pinCode": "303338", "townClass": "10-75L"}, {"townCode": "RAJJAIRC5L1927", "pinCode": "303338", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L2272", "pinCode": "303338", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L5460", "pinCode": "303338", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L8624", "pinCode": "303338", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9041", "pinCode": "303348", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L9799", "pinCode": "303348", "townClass": "Rural"}, {"townCode": "JAIPUR554", "pinCode": "303604", "townClass": "10-75L"}, {"townCode": "RAJJAIRC4L01238", "pinCode": "303604", "townClass": "Rural"}, {"townCode": "RAJJAIRC5L0585", "pinCode": "303604", "townClass": "Rural"}, {"townCode": "RAJJAIRC6L4618", "pinCode": "303604", "townClass": "Rural"}, {"townCode": "RAJNAGRC6L8220", "pinCode": "341001", "townClass": "Rural"}, {"townCode": "RAJNAGRC6L9054", "pinCode": "341001", "townClass": "Rural"}, {"townCode": "RAJNAGUC2L4872", "pinCode": "341001", "townClass": "1-10L"}, {"townCode": "RAJNAGRC6L0574", "pinCode": "341303", "townClass": "Rural"}, {"townCode": "RAJNAGRC6L7151", "pinCode": "341303", "townClass": "Rural"}, {"townCode": "RAJNAGRC6L7618", "pinCode": "341303", "townClass": "Rural"}, {"townCode": "RAJNAGUC3L01630", "pinCode": "341306", "townClass": "Below 1L"}, {"townCode": "RAJNAGRC6L4097", "pinCode": "341318", "townClass": "Rural"}, {"townCode": "RAJNAGUC2L0559", "pinCode": "341505", "townClass": "1-10L"}, {"townCode": "RAJNAGRC6L5354", "pinCode": "341508", "townClass": "Rural"}, {"townCode": "RAJNAGUC3L9241", "pinCode": "341508", "townClass": "Below 1L"}, {"townCode": "RAJNAGRC6L8943", "pinCode": "341510", "townClass": "Rural"}, {"townCode": "RAJNAGRC5L2389", "pinCode": "341511", "townClass": "Rural"}, {"townCode": "RAJNAGRC6L9061", "pinCode": "341513", "townClass": "Rural"}, {"townCode": "RAJNAGRC4L0042", "pinCode": "341517", "townClass": "Rural"}], "Santosh Singh": [{"townCode": "JODHPUR555", "pinCode": "342001", "townClass": "10-75L"}, {"townCode": "JODHPUR555", "pinCode": "342011", "townClass": "10-75L"}, {"townCode": "RAJJODUC3L0551", "pinCode": "342301", "townClass": "Below 1L"}, {"townCode": "RAJBARUC3L0546", "pinCode": "344001", "townClass": "Below 1L"}, {"townCode": "RAJBARRC4L6433", "pinCode": "344032", "townClass": "Rural"}, {"townCode": "RAJBARRC6L4050", "pinCode": "344702", "townClass": "Rural"}], "Shiv Pal Kumawat": [{"townCode": "RAJSIKRC5L8672", "pinCode": "331024", "townClass": "Rural"}, {"townCode": "RAJSIKUC1L0814", "pinCode": "332001", "townClass": "1-10L"}, {"townCode": "RAJSIKRC5L9135", "pinCode": "332024", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0837", "pinCode": "332031", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L6653", "pinCode": "332031", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L01069", "pinCode": "332301", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L6547", "pinCode": "332301", "townClass": "Rural"}, {"townCode": "RAJSIKUC3L01052", "pinCode": "332301", "townClass": "Below 1L"}, {"townCode": "RAJSIKRC5L8068", "pinCode": "332302", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0653", "pinCode": "332303", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L9136", "pinCode": "332303", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L5872", "pinCode": "332311", "townClass": "Rural"}, {"townCode": "RAJSIKUC3L0549", "pinCode": "332311", "townClass": "Below 1L"}, {"townCode": "RAJSIKRC4L01029", "pinCode": "332318", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L9136", "pinCode": "332401", "townClass": "Rural"}, {"townCode": "RAJSIKRC6L9070", "pinCode": "332402", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0837", "pinCode": "332403", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0581", "pinCode": "332404", "townClass": "Rural"}, {"townCode": "RAJSIKUC3L0552", "pinCode": "332404", "townClass": "Below 1L"}, {"townCode": "RAJSIKRC5L0837", "pinCode": "332405", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0955", "pinCode": "332411", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L9139", "pinCode": "332604", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0718", "pinCode": "332709", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L9139", "pinCode": "332709", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L5537", "pinCode": "332715", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0220", "pinCode": "332719", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L9139", "pinCode": "332719", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L0961", "pinCode": "332722", "townClass": "Rural"}, {"townCode": "RAJSIKRC5L7215", "pinCode": "332742", "townClass": "Rural"}], "Vikram Singh": [{"townCode": "RAJJHURC6L0567", "pinCode": "333001", "townClass": "Rural"}, {"townCode": "RAJJHUUC2L0558", "pinCode": "333001", "townClass": "1-10L"}, {"townCode": "RAJJHURC5L2480", "pinCode": "333012", "townClass": "Rural"}, {"townCode": "RAJJHURC6L0573", "pinCode": "333021", "townClass": "Rural"}, {"townCode": "RAJJHURC6L3782", "pinCode": "333021", "townClass": "Rural"}, {"townCode": "RAJJHURC5L02536", "pinCode": "333026", "townClass": "Rural"}, {"townCode": "RAJJHURC6L0052", "pinCode": "333026", "townClass": "Rural"}, {"townCode": "RAJJHURC6L0575", "pinCode": "333026", "townClass": "Rural"}, {"townCode": "RAJJHURC6L4662", "pinCode": "333026", "townClass": "Rural"}, {"townCode": "RAJJHUUC3L0548", "pinCode": "333026", "townClass": "Below 1L"}, {"townCode": "RAJJHURC4L1220", "pinCode": "333028", "townClass": "Rural"}, {"townCode": "RAJJHURC6L2698", "pinCode": "333028", "townClass": "Rural"}, {"townCode": "RAJJHUUC3L02649", "pinCode": "333031", "townClass": "Below 1L"}, {"townCode": "RAJJHURC5L7998", "pinCode": "333033", "townClass": "Rural"}, {"townCode": "RAJJHURC6L7993", "pinCode": "333033", "townClass": "Rural"}, {"townCode": "RAJJHURC4L5383", "pinCode": "333053", "townClass": "Rural"}, {"townCode": "RAJJHURC5L8008", "pinCode": "333053", "townClass": "Rural"}, {"townCode": "RAJJHURC4L02647", "pinCode": "333302", "townClass": "Rural"}, {"townCode": "RAJJHUUC3L6990", "pinCode": "333501", "townClass": "Below 1L"}, {"townCode": "RAJJHURC5L02658", "pinCode": "333514", "townClass": "Rural"}, {"townCode": "RAJJHURC6L2659", "pinCode": "333704", "townClass": "Rural"}]};
+const STORAGE_KEY = 'rm_fiber_entries_direct_save_v2';
+const rmSelect = document.getElementById('rm');
+const comboSelect = document.getElementById('combo');
+const statusBox = document.getElementById('saveStatus');
+const msg = document.getElementById('message');
+const submitBtn = document.getElementById('submitBtn');
+const fields = {
+  landmark: document.getElementById('landmark'), pinCode: document.getElementById('pinCode'),
+  townClass: document.getElementById('townClass'), townCode: document.getElementById('townCode'), city: document.getElementById('city')
+};
+let localEntries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+function showMessage(text, type='info') {
+  msg.className = 'alert show ' + type; msg.textContent = text;
+  setTimeout(() => { msg.className = 'alert'; }, 5500);
+}
+function updateStatus() {
+  if (POWER_AUTOMATE_URL.startsWith('http')) { statusBox.textContent = 'Direct Excel save active'; statusBox.className = 'status ok'; }
+  else { statusBox.textContent = 'Power Automate URL pending'; statusBox.className = 'status'; }
+}
+function escapeHtml(s) { return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+Object.keys(RM_DATA).sort().forEach(rm => {
+  const opt = document.createElement('option'); opt.value = rm; opt.textContent = rm; rmSelect.appendChild(opt);
+});
+
+function fillCombo(rm) {
+  comboSelect.innerHTML = '';
+  if (!rm || !RM_DATA[rm]) { comboSelect.disabled = true; comboSelect.innerHTML = '<option value="">Select RM first</option>'; return; }
+  comboSelect.disabled = false;
+  comboSelect.innerHTML = '<option value="">Select Pin Code / Town Code</option>';
+  RM_DATA[rm].forEach((item, idx) => {
+    const opt = document.createElement('option'); opt.value = idx;
+    opt.textContent = `${item.pinCode} | ${item.townClass} | ${item.townCode}`;
+    comboSelect.appendChild(opt);
+  });
+}
+function autofill() {
+  const rm = rmSelect.value, idx = comboSelect.value;
+  if (rm && idx !== '' && RM_DATA[rm][idx]) {
+    const item = RM_DATA[rm][idx]; fields.pinCode.value = item.pinCode; fields.townClass.value = item.townClass; fields.townCode.value = item.townCode;
+  }
+}
+rmSelect.addEventListener('change', () => { fillCombo(rmSelect.value); fields.pinCode.value=''; fields.townClass.value=''; fields.townCode.value=''; });
+comboSelect.addEventListener('change', autofill);
+
+function saveLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(localEntries)); }
+function render() {
+  const tbody = document.querySelector('#previewTable tbody'); tbody.innerHTML = '';
+  localEntries.forEach((e, i) => {
+    tbody.insertAdjacentHTML('beforeend', `<tr><td>${i+1}</td><td>${escapeHtml(e.RM)}</td><td>${escapeHtml(e.Landmark)}</td><td>${escapeHtml(e.PinCode)}</td><td>${escapeHtml(e.TownClass)}</td><td>${escapeHtml(e.TownCode)}</td><td>${escapeHtml(e.City)}</td></tr>`);
+  });
+}
+function getPayload() {
+  return {
+    Secret: FORM_SECRET,
+    RM: rmSelect.value.trim(),
+    Landmark: fields.landmark.value.trim(),
+    PinCode: fields.pinCode.value.trim(),
+    TownClass: fields.townClass.value.trim(),
+    TownCode: fields.townCode.value.trim(),
+    City: fields.city.value.trim(),
+    SubmittedOn: new Date().toISOString(),
+    Source: 'RM HTML Form'
+  };
+}
+async function saveToPowerAutomate(payload) {
+  if (!POWER_AUTOMATE_URL.startsWith('http')) throw new Error('Power Automate URL not configured in HTML file.');
+  const response = await fetch(POWER_AUTOMATE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error('Power Automate returned HTTP ' + response.status);
+  return true;
+}
+
+document.getElementById('dataForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const payload = getPayload();
+  if ([payload.RM,payload.Landmark,payload.PinCode,payload.TownClass,payload.TownCode,payload.City].some(v => !v)) { showMessage('Please fill all mandatory fields.', 'error'); return; }
+  submitBtn.disabled = true; submitBtn.textContent = 'Saving...';
+  try {
+    await saveToPowerAutomate(payload);
+    showMessage('Saved directly to Excel successfully ✅', 'success');
+    localEntries.push(payload); saveLocal(); render();
+    document.getElementById('dataForm').reset(); comboSelect.disabled = true; comboSelect.innerHTML = '<option value="">Select RM first</option>';
+  } catch (err) {
+    localEntries.push(payload); saveLocal(); render();
+    showMessage('Could not save online. Saved in local backup. Error: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false; submitBtn.textContent = 'Submit & Save to Excel';
+  }
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('Clear local backup entries from this device?')) { localEntries = []; saveLocal(); render(); showMessage('Local backup cleared.', 'info'); }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!localEntries.length) { showMessage('No local backup entries available.', 'error'); return; }
+  const header = ['Sr. No','RM','Landmark','Pin Code','Town Class','Town Code','City'];
+  const rows = [header];
+  localEntries.forEach((e, i) => rows.push([i+1, e.RM, e.Landmark, e.PinCode, e.TownClass, e.TownCode, e.City]));
+  const table = rows.map(r => '<tr>' + r.map(c => `<td>${escapeHtml(c)}</td>`).join('') + '</tr>').join('');
+  const blob = new Blob([`<html><head><meta charset="UTF-8"></head><body><table>${table}</table></body></html>`], {type:'application/vnd.ms-excel;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Format_1_Backup_Data.xls'; a.click(); URL.revokeObjectURL(a.href);
+});
+
+updateStatus(); render();
+</script>
+</body>
+</html>
